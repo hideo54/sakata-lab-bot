@@ -15,17 +15,11 @@
   "main": "lib/index.js",
   "dependencies": {
     "@slack/bolt": "^3.12.2",
-    "cheerio": "^1.0.0-rc.12",
     "dotenv": "^16.0.3",
-    "firebase-admin": "^11.5.0",
-    "firebase-functions": "^4.2.1",
-    "scrape-it": "^6.0.1",
-    "slackify-html": "^1.0.1"
+    "firebase-functions": "^4.2.1"
   },
   "devDependencies": {
     "@hideo54/eslint-config": "^1.1.0",
-    "@types/slackify-html": "^1.0.5",
-    "firebase-functions-test": "^0.2.0",
     "typescript": "^5.0.3"
   },
   "private": true
