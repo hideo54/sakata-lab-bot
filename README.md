@@ -6,11 +6,7 @@
 
 ## About
 
-`functions/` 以下のソースをもとに、毎時実行される `sakataLabSlackHourlyJob` 関数と、Slack Events を受け取る `sakataLabSlackEventsReceiver` 関数が Cloud Functions 上で動作します。
-
-### faculty-news
-
-工学部ポータルサイトのお知らせの更新を取得し投稿します。
+`functions/` 以下のソースをもとに、Slack Events を受け取る `sakataLabSlackEventsReceiver` 関数が Cloud Functions 上で動作します。
 
 ### notifier
 
