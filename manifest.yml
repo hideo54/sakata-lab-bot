@@ -1,10 +1,10 @@
 display_information:
-  name: TMI 2023 bot
-  description: TMI bot for general use.
-  background_color: "#1F2845"
+  name: Sakata Lab bot
+  description: Sakata Lab bot for general use.
+  background_color: "#812525"
 features:
   bot_user:
-    display_name: TMI 2023 bot
+    display_name: Sakata Lab bot
     always_online: false
 oauth_config:
   scopes:
@@ -14,7 +14,7 @@ oauth_config:
       - emoji:read
 settings:
   event_subscriptions:
-    request_url: https://asia-northeast1-hideo54.cloudfunctions.net/tmiSlackEventsReceiver/slack/events
+    request_url: https://asia-northeast1-hideo54.cloudfunctions.net/sakataLabSlackEventsReceiver/slack/events
     bot_events:
       - channel_created
       - channel_unarchive

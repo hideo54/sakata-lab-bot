@@ -1,12 +1,12 @@
-# tmi-slack
+# sakata-lab-slack
 
-[東京大学大学院工学系研究科技術経営戦略学専攻 (TMI)](https://tmi.t.u-tokyo.ac.jp/) 2023年度入学生の Slack で動作する Slack bot のソースコードです。
+[坂田・森・浅谷研究室](https://www.sakatalab.t.u-tokyo.ac.jp/)の Slack で動作する Slack bot のソースコードです。
 
-TMI 生からの pull request は積極的に受け付けます!
+坂田研学生からの pull request は積極的に受け付けます!
 
 ## About
 
-`functions/` 以下のソースをもとに、毎時実行される `tmiSlackHourlyJob` 関数と、Slack Events を受け取る `tmiSlackEventsReceiver` 関数が Cloud Functions 上で動作します。
+`functions/` 以下のソースをもとに、毎時実行される `sakataLabSlackHourlyJob` 関数と、Slack Events を受け取る `sakataLabSlackEventsReceiver` 関数が Cloud Functions 上で動作します。
 
 ### faculty-news
 

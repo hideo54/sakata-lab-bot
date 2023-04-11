@@ -25,7 +25,7 @@ const slackApp = new App({
     receiver,
 });
 
-export const tmiSlackHourlyJob = functions
+export const sakataLabSlackHourlyJob = functions
     .region('asia-northeast1')
     .pubsub.schedule('0 * * * *')
     .timeZone('Asia/Tokyo')
@@ -35,7 +35,7 @@ export const tmiSlackHourlyJob = functions
         await facultyNews({ slackApp, firestoreDb, channel: facultyNewsChannel });
     });
 
-export const tmiSlackEventsReceiver = functions
+export const sakataLabSlackEventsReceiver = functions
     .region('asia-northeast1')
     .https.onRequest(
         notifier({
