@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import { App, ExpressReceiver } from '@slack/bolt';
+import express from 'express';
 import dotenv from 'dotenv';
 dotenv.config();
 import notifier from './notifier';
@@ -20,12 +21,16 @@ const slackApp = new App({
     receiver,
 });
 
-export const sakataLabSlackEventsReceiver = functions
+const server = express();
+
+server.get('/slack', (req, res) => {
+    notifier({
+        slackApp,
+        receiver,
+        channel: randomChannel,
+    });
+});
+
+export const sakataLabBot = functions
     .region('asia-northeast1')
-    .https.onRequest(
-        notifier({
-            slackApp,
-            receiver,
-            channel: randomChannel,
-        })
-    );
+    .https.onRequest(server);
