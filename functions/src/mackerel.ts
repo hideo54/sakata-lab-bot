@@ -44,14 +44,16 @@ const getTopMemConsumers = async (hostId: string) => {
     return top;
 };
 
-const createMemConsumerDisplayBlocks = async (hostId: string, hostname: string) => {
+const createMemConsumerDisplayBlocks = async (hostId: string, hostname: string, prefixLines: string[]) => {
     const blocks: KnownBlock[] = [];
     const topMemConsumers = await getTopMemConsumers(hostId);
     const lines = [
+        ...prefixLines,
         `*${hostname}* のメモリ使用量が多いユーザーを発表するよ〜 :loudspeaker:`,
         ...topMemConsumers.map(([metricName, memPercent]) =>
             `*${metricName.replace('custom.user_mem.', '')}: ${memPercent?.toFixed(1)}%*`
         ),
+        '余分にカーネルを立ち上げている人は停止してね!',
     ];
     blocks.push({
         type: 'section',
@@ -141,7 +143,9 @@ const func = async ({ body, slackApp, slackChannel }: {
         });
     }
     if (body.event === 'alert' && body.alert.status === 'critical') {
-        const blocks = await createMemConsumerDisplayBlocks(body.host.id, body.host.name);
+        const blocks = await createMemConsumerDisplayBlocks(body.host.id, body.host.name, [
+            `:rotating_light: メモリ使用量が${(100 * body.alert.metricValue).toFixed(1)}% に達しているよ :fearful:`,
+        ]);
         slackApp.client.chat.postMessage({
             channel: slackChannel,
             text: `${body.host.name} のメモリ使用量が多いユーザーを発表するよ〜 :loudspeaker:`,
