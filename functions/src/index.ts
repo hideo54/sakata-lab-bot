@@ -19,17 +19,18 @@ const slackApp = new App({
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     signingSecret: process.env.SLACK_SIGNING_SECRET!,
     receiver,
+    endpoints: '/', // server.use('/slack/events', ...) するので
 });
 
 const server = express();
 
-server.get('/slack', (req, res) => {
-    notifier({
-        slackApp,
-        receiver,
-        channel: randomChannel,
-    });
+notifier({
+    slackApp,
+    receiver,
+    channel: randomChannel,
 });
+
+server.use('/slack/events', receiver.router);
 
 export const sakataLabBot = functions
     .region('asia-northeast1')
