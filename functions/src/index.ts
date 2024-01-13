@@ -3,7 +3,7 @@ import { App, ExpressReceiver } from '@slack/bolt';
 import express from 'express';
 import dotenv from 'dotenv';
 dotenv.config();
-import notifier from './notifier';
+import slackEvents from './slack-events';
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const randomChannel = process.env.SLACK_RANDOM_CHANNEL!;
@@ -24,7 +24,7 @@ const slackApp = new App({
 
 const server = express();
 
-notifier({
+slackEvents({
     slackApp,
     receiver,
     channel: randomChannel,
