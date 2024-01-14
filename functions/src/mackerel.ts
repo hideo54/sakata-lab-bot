@@ -1,5 +1,6 @@
 import type { App, KnownBlock } from '@slack/bolt';
 import axios from 'axios';
+import dayjs from 'dayjs';
 import qs from 'qs';
 
 const stigmatized_mem_usage_threshold = 10;
@@ -62,7 +63,12 @@ const createMemConsumerDisplayBlocks = async (hostId: string, hostname: string, 
             text: lines.join('\n'),
         },
     });
-    const imageUrl = `https://asia-northeast1-hideo54.cloudfunctions.net/sakataLabBot/mackerel/graphs/${hostId}/custom.user_mem.*?PLAY2AUTH_SESS_ID=${play2authSessId}`;
+    const now = dayjs();
+    const nowStr = now.toISOString().slice(0, -5);
+    const pastStr = now.subtract(3, 'hour').toISOString().slice(0, -5);
+    const imageUrl = `https://asia-northeast1-hideo54.cloudfunctions.net/sakataLabBot/mackerel/graphs/${hostId}/custom.user_mem.*`
+        + `?PLAY2AUTH_SESS_ID=${play2authSessId}`
+        + `&t=${pastStr},${nowStr}`;
     const imageAvailable = await axios.get(imageUrl).then(() => true).catch(() => false);
     if (imageAvailable) {
         blocks.push({

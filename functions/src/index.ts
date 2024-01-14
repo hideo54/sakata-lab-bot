@@ -56,12 +56,17 @@ const createCookieString = (cookieObject: object) =>
 // Mackerel Graph Proxy
 server.get('/mackerel/graphs/:hostId/:metricLabel', async (req, res) => {
     const { hostId, metricLabel } = req.params;
+    const { PLAY2AUTH_SESS_ID, ...query } = req.query;
     try {
-        const mackerelRes = await axios.get(`https://mackerel.io/embed/orgs/sakata-lab/hosts/${hostId}.png?graph=${metricLabel}`, {
+        const mackerelRes = await axios.get(`https://mackerel.io/embed/orgs/sakata-lab/hosts/${hostId}.png`, {
+            params: {
+                graph: metricLabel,
+                ...query,
+            },
             headers: {
                 Cookie: createCookieString({
                     timezoneName: 'Asia/Tokyo',
-                    ...req.query,
+                    PLAY2AUTH_SESS_ID,
                 }),
             },
             responseType: 'arraybuffer',
