@@ -150,11 +150,11 @@ const func = async ({ body, slackApp, slackChannel }: {
     }
     if (body.event === 'alert' && body.alert.status === 'critical') {
         const blocks = await createMemConsumerDisplayBlocks(body.host.id, body.host.name, [
-            `:rotating_light: メモリ使用量が${(body.alert.metricValue).toFixed(1)}% に達しているよ :fearful:`,
+            `:rotating_light: *${body.host.name}* のメモリ使用量が${(body.alert.metricValue).toFixed(1)}% に達しているよ :fearful:`,
         ]);
         slackApp.client.chat.postMessage({
             channel: slackChannel,
-            text: `${body.host.name} のメモリ使用量が多いユーザーを発表するよ〜 :loudspeaker:`,
+            text: 'メモリ使用量が多いユーザーを発表するよ〜 :loudspeaker:',
             blocks,
         });
     }
