@@ -1,4 +1,4 @@
-# sakata-lab-slack
+# sakata-lab-bot
 
 [坂田・森・浅谷研究室](https://www.sakatalab.t.u-tokyo.ac.jp/)の Slack で動作する Slack bot のソースコードです。
 
