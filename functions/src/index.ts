@@ -1,7 +1,6 @@
 import { App, ExpressReceiver } from '@slack/bolt';
 import axios from 'axios';
 import bodyParser from 'body-parser';
-import express from 'express';
 import * as functions from 'firebase-functions';
 
 import dotenv from 'dotenv';
@@ -29,7 +28,7 @@ const slackApp = new App({
     endpoints: '/', // server.use('/slack/events', ...) するので
 });
 
-const server = express();
+const server = receiver.app;
 server.use(bodyParser.urlencoded({ extended: true }));
 server.use(bodyParser.json());
 
@@ -38,8 +37,6 @@ slackEvents({
     receiver,
     channel: randomChannel,
 });
-
-server.use('/slack/events', receiver.router);
 
 server.post('/mackerel', (req, res) => {
     mackerel({
