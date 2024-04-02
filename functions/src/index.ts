@@ -1,7 +1,8 @@
 import { App, ExpressReceiver } from '@slack/bolt';
 import axios from 'axios';
 import bodyParser from 'body-parser';
-import * as functions from 'firebase-functions';
+import { setGlobalOptions } from 'firebase-functions/v2';
+import { onRequest } from 'firebase-functions/v2/https';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -75,6 +76,8 @@ server.get('/mackerel/graphs/:hostId/:metricLabel', async (req, res) => {
     }
 });
 
-export const sakataLabBot = functions
-    .region('asia-northeast1')
-    .https.onRequest(server);
+setGlobalOptions({
+    region: 'asia-northeast1',
+});
+
+export const sakataLabBot = onRequest(server);
