@@ -19,6 +19,9 @@ const receiver = new ExpressReceiver({
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     signingSecret: process.env.SLACK_SIGNING_SECRET!,
     processBeforeResponse: true,
+    customPropertiesExtractor: req => ({
+        Headers: req.headers,
+    }),
 });
 const slackApp = new App({
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -32,6 +35,14 @@ const slackApp = new App({
 const server = receiver.app;
 server.use(bodyParser.urlencoded({ extended: true }));
 server.use(bodyParser.json());
+
+server.use((req, res, next) => {
+    // https://api.slack.com/apis/connections/events-api#retries
+    if (req.headers['X-Slack-Retry-Reason'] === 'http_timeout') {
+        res.status(200).send('Your previous request was actually accepted and no need to retry.');
+    }
+    next();
+});
 
 slackEvents({
     slackApp,
