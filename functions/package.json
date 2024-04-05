@@ -18,7 +18,8 @@
     "body-parser": "^1.20.2",
     "dayjs": "^1.11.10",
     "dotenv": "^16.0.3",
-    "firebase-functions": "^4.8.2"
+    "firebase-functions": "^4.8.2",
+    "node-ssh": "^13.1.0"
   },
   "devDependencies": {
     "@google-cloud/functions-framework": "^3.3.0",
