@@ -1,4 +1,4 @@
-import type { App } from '@slack/bolt';
+import type { App, Block } from '@slack/bolt';
 import { stripIndent } from 'common-tags';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
@@ -65,125 +65,264 @@ type SessionDetail = {
     }
 };
 
-const loginToCollectUsage = async () => {
+const loginToCollectUsage = async (host: keyof typeof ports) => {
     const ssh = new NodeSSH();
 
     const usageData: Usage[] = [];
-    for (const [host, port] of Object.entries(ports)) {
-        const proxyConnection = await ssh.connect({
-            ...proxyInfo,
-            ...privateKeyInfo,
-        });
-        const stream = await proxyConnection.forwardOut('127.0.0.1', port, ti_ip, port);
-        const connection = await ssh.connect({
-            ...privateKeyInfo,
-            sock: stream,
-            host: ti_ip,
-            username: bot_username,
-            port,
-        });
-        console.log(`Connected to ${host}.`);
+    const proxyConnection = await ssh.connect({
+        ...proxyInfo,
+        ...privateKeyInfo,
+    });
+    const stream = await proxyConnection.forwardOut('127.0.0.1', ports[host], ti_ip, ports[host]);
+    const connection = await ssh.connect({
+        ...privateKeyInfo,
+        sock: stream,
+        host: ti_ip,
+        username: bot_username,
+        port: ports[host],
+    });
+    console.log(`Connected to ${host}.`);
 
-        const lines = await connection.exec('ps -eo user:20,args | grep jupyter-lab | grep -v grep', []);
-        for (const line of lines.split('\n')) {
-            const [user, ...args] = line.split(' ').filter(s => s !== '');
-            const password = args.find(s => s.startsWith('--NotebookApp.token='))?.replace('--NotebookApp.token=', '');
-            const port = Number(args.find(s => s.startsWith('--port='))?.replace('--port=', ''));
-            if (!password || !port) continue;
-            const loginHtml = await connection.exec('curl', ['--silent', `http://localhost:${port}/login`]);
-            const { xsrf_token } = scrapeHTML<{
-                xsrf_token: string;
-            }>(loginHtml, {
-                xsrf_token: {
-                    selector: 'input[name="_xsrf"]',
-                    attr: 'value',
-                },
-            });
-            const headers = await connection.exec('curl', [
+    const lines = await connection.exec('ps -eo user:20,args | grep jupyter-lab | grep -v grep', []);
+    for (const line of lines.split('\n')) {
+        const [user, ...args] = line.split(' ').filter(s => s !== '');
+        const password = args.find(s => s.startsWith('--NotebookApp.token='))?.replace('--NotebookApp.token=', '');
+        const port = Number(args.find(s => s.startsWith('--port='))?.replace('--port=', ''));
+        if (!password || !port) continue;
+        const loginHtml = await connection.exec('curl', ['--silent', `http://localhost:${port}/login`]);
+        const { xsrf_token } = scrapeHTML<{
+            xsrf_token: string;
+        }>(loginHtml, {
+            xsrf_token: {
+                selector: 'input[name="_xsrf"]',
+                attr: 'value',
+            },
+        });
+        const headers = await connection.exec('curl', [
+            '--silent',
+            '--dump-header', '-',
+            '-X', 'POST',
+            '-H', 'Content-Type: application/x-www-form-urlencoded',
+            '-H', `Cookie: _xsrf=${xsrf_token}`,
+            '-d', `_xsrf=${xsrf_token}&password=${password}`,
+            `http://localhost:${port}/login`,
+        ]);
+        const cookie = headers.split('\n').find(line => line.startsWith('Set-Cookie: '))?.replace('Set-Cookie: ', '').split(';')[0];
+        const sessions = JSON.parse(
+            await connection.exec('curl', [
                 '--silent',
-                '--dump-header', '-',
-                '-X', 'POST',
-                '-H', 'Content-Type: application/x-www-form-urlencoded',
-                '-H', `Cookie: _xsrf=${xsrf_token}`,
-                '-d', `_xsrf=${xsrf_token}&password=${password}`,
-                `http://localhost:${port}/login`,
+                '-H', 'Content-Type: application/json',
+                '-H', `Cookie: ${cookie}`,
+                `http://localhost:${port}/api/sessions`,
+            ])
+        ) as SessionDetail[];
+        for (const session of sessions) {
+            const kernelId = session.kernel.id;
+            const pid = await connection.exec(`ps aux | grep ${kernelId} | grep -v grep | awk '{print $2}'`, []);
+            const psResult = await connection.exec('ps', [
+                '-p', pid,
+                '-o', '%cpu,%mem',
+                '--no-headers',
             ]);
-            const cookie = headers.split('\n').find(line => line.startsWith('Set-Cookie: '))?.replace('Set-Cookie: ', '').split(';')[0];
-            const sessions = JSON.parse(
-                await connection.exec('curl', [
-                    '--silent',
-                    '-H', 'Content-Type: application/json',
-                    '-H', `Cookie: ${cookie}`,
-                    `http://localhost:${port}/api/sessions`,
-                ])
-            ) as SessionDetail[];
-            for (const session of sessions) {
-                const kernelId = session.kernel.id;
-                const pid = await connection.exec(`ps aux | grep ${kernelId} | grep -v grep | awk '{print $2}'`, []);
-                const psResult = await connection.exec('ps', [
-                    '-p', pid,
-                    '-o', '%cpu,%mem',
-                    '--no-headers',
-                ]);
-                const [cpu, mem] = psResult.split(' ').filter(s => s !== '').map(s => Number(s));
-                usageData.push({
-                    host,
-                    user,
-                    notebookPath: session.notebook?.path,
-                    executionState: session.kernel.execution_state,
-                    connections: session.kernel.connections,
-                    lastActivity: session.kernel.last_activity,
-                    pid,
-                    cpu,
-                    mem,
-                });
-            }
-            console.log('.');
+            const [cpu, mem] = psResult.split(' ').filter(s => s !== '').map(s => Number(s));
+            usageData.push({
+                host,
+                user,
+                notebookPath: session.notebook?.path,
+                executionState: session.kernel.execution_state,
+                connections: session.kernel.connections,
+                lastActivity: session.kernel.last_activity,
+                pid,
+                cpu,
+                mem,
+            });
         }
-
-        connection.dispose();
-        proxyConnection.dispose();
     }
+    connection.dispose();
+    proxyConnection.dispose();
     ssh.dispose();
     const uniqueUsageData = [...new Map(usageData.map(data => [data.pid, data])).values()];
     return uniqueUsageData;
 };
 
-const func = async ({ slackApp, slackChannel }: {
+export const notifyAllBigNotebooks = async ({ host, slackApp, slackChannel }: {
+    host: string;
     slackApp: App;
     slackChannel: string;
 }) => {
-    const usageData = await loginToCollectUsage();
-    const bigNotebooks = usageData.filter(data =>
-        data.executionState === 'idle'
-        && data.mem >= 5
-        && data.notebookPath
-    ).sort((a, b) => - (a.mem - b.mem));
-    const text = stripIndent`
-        メモリ食い食い notebook を発表するよ〜 :loudspeaker:
-    ` + '\n' + bigNotebooks.map(process => stripIndent`
-        * :desktop_computer: ${process.host} :floppy_disk: ${process.mem}% for \`${process.notebookPath}\` by ${process.user}
-        最終実行日時: ${dayjs(process.lastActivity).tz('Asia/Tokyo').format('MM月DD日 HH:mm')}
-    `).join('\n') + stripIndent`
-        うち、しばらく使われていない notebook はこれだよ〜 :loudspeaker:
-    ` + '\n' + bigNotebooks.filter(process =>
-        dayjs(process.lastActivity) < dayjs().subtract(3, 'days')
-    ).map(process => stripIndent`
-        * :desktop_computer: ${process.host} :floppy_disk: ${process.mem}% for ${process.notebookPath} by ${process.user} 最終実行日時: ${dayjs(process.lastActivity).tz('Asia/Tokyo').format('MM月DD日 HH:mm')}
-    `).join('\n');
+    const blocks: Block[] = [
+        {
+            type: 'section',
+            //@ts-expect-error not officially documented
+            text: {
+                type: 'plain_text',
+                text: 'メモリ食い食い notebook を発表するよ〜 :loudspeaker:',
+            },
+        },
+    ];
+    try {
+        const usageData = await loginToCollectUsage(host as keyof typeof ports);
+        const bigNotebooks = usageData.filter(data =>
+            data.executionState === 'idle'
+            && data.mem >= 5
+            && data.notebookPath
+        ).sort((a, b) => - (a.mem - b.mem));
+        if (bigNotebooks.length === 0) return;
+        blocks.push({
+            type: 'header',
+            //@ts-expect-error not officially documented
+            text: {
+                type: 'plain_text',
+                text: `:desktop_computer: ${host}`,
+            },
+        });
+        blocks.push({
+            type: 'rich_text',
+            //@ts-expect-error not officially documented
+            elements: [
+                {
+                    type: 'rich_text_list',
+                    elements: bigNotebooks.map(notebook => ({
+                        type: 'rich_text_section',
+                        elements: [
+                            {
+                                type: 'emoji',
+                                name: 'floppy_disk',
+                            },
+                            {
+                                type: 'text',
+                                text: ` ${notebook.mem}% `,
+                                style: {
+                                    bold: true,
+                                },
+                            },
+                            {
+                                type: 'text',
+                                text: notebook.notebookPath,
+                                style: {
+                                    code: true,
+                                },
+                            },
+                            {
+                                type: 'text',
+                                text: '\n' + stripIndent`
+                                    実行ユーザー: ${notebook.user}
+                                    最終実行日時: ${dayjs(notebook.lastActivity).tz('Asia/Tokyo').format('M月D日 H:mm')}
+                                `,
+                            },
+                        ],
+                    })),
+                    style: 'bullet',
+                    indent: 0,
+                },
+            ],
+        });
+    } catch (e) {
+        blocks.push({
+            type: 'header',
+            //@ts-expect-error not officially documented
+            text: {
+                type: 'plain_text',
+                text: `:desktop_computer: ${host}: :warning: 取れなかったよ… :cry:`,
+            },
+        });
+    }
     await slackApp.client.chat.postMessage({
         channel: slackChannel,
-        text,
-        blocks: [
-            {
-                type: 'section',
-                text: {
-                    type: 'mrkdwn',
-                    text,
-                },
-            },
-        ],
+        text: 'ノートブック情報',
+        blocks,
     });
 };
 
-export default func;
+export const notifyUnusedBigNotebooks = async ({ slackApp, slackChannel }: {
+    slackApp: App;
+    slackChannel: string;
+}) => {
+    const blocks: Block[] = [
+        {
+            type: 'section',
+            //@ts-expect-error not officially documented
+            text: {
+                type: 'plain_text',
+                text: 'しばらく使われていないデカ notebook を発表するよ〜 :loudspeaker:',
+            },
+        },
+    ];
+    for (const host of ['ti01', 'ti02', 'ti03', 'ti04', 'ti05']) {
+        try {
+            const usageData = await loginToCollectUsage(host as keyof typeof ports);
+            const bigNotebooks = usageData.filter(data =>
+                data.executionState === 'idle'
+                && data.mem >= 5
+                && data.notebookPath
+            ).sort((a, b) => - (a.mem - b.mem));
+            const unusedBigNotebooks = bigNotebooks.filter(notebook =>
+                dayjs(notebook.lastActivity).isBefore(dayjs().subtract(3, 'days'))
+            );
+            if (unusedBigNotebooks.length === 0) continue;
+            blocks.push({
+                type: 'header',
+                //@ts-expect-error not officially documented
+                text: {
+                    type: 'plain_text',
+                    text: `:desktop_computer: ${host}`,
+                },
+            });
+            blocks.push({
+                type: 'rich_text',
+                //@ts-expect-error not officially documented
+                elements: [
+                    {
+                        type: 'rich_text_list',
+                        elements: unusedBigNotebooks.map(notebook => ({
+                            type: 'rich_text_section',
+                            elements: [
+                                {
+                                    type: 'emoji',
+                                    name: 'floppy_disk',
+                                },
+                                {
+                                    type: 'text',
+                                    text: ` ${notebook.mem}% `,
+                                    style: {
+                                        bold: true,
+                                    },
+                                },
+                                {
+                                    type: 'text',
+                                    text: notebook.notebookPath,
+                                    style: {
+                                        code: true,
+                                    },
+                                },
+                                {
+                                    type: 'text',
+                                    text: '\n' + stripIndent`
+                                        実行ユーザー: ${notebook.user}
+                                        最終実行日時: ${dayjs(notebook.lastActivity).tz('Asia/Tokyo').format('M月D日 H:mm')}
+                                    `,
+                                },
+                            ],
+                        })),
+                        style: 'bullet',
+                        indent: 0,
+                    },
+                ],
+            });
+        } catch (e) {
+            blocks.push({
+                type: 'header',
+                //@ts-expect-error not officially documented
+                text: {
+                    type: 'plain_text',
+                    text: `:desktop_computer: ${host}: :warning: 取れなかったよ… :cry:`,
+                },
+            });
+        }
+    }
+    await slackApp.client.chat.postMessage({
+        channel: slackChannel,
+        text: 'しばらく使われていないデカ notebook を発表するよ〜 :loudspeaker:',
+        blocks,
+    });
+};

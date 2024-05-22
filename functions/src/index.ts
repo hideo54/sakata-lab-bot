@@ -10,14 +10,12 @@ dotenv.config();
 
 import mackerel from './mackerel';
 import slackEvents from './slack-events';
-import jupyterSessions from './jupyter-sessions';
+import { notifyUnusedBigNotebooks } from './jupyter-sessions';
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const randomChannel = process.env.SLACK_RANDOM_CHANNEL!;
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const serverChannel = process.env.SLACK_SERVER_CHANNEL!;
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-const hideo54Channel = process.env.SLACK_HIDEO54_USERID!;
 
 const receiver = new ExpressReceiver({
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -96,11 +94,11 @@ setGlobalOptions({
 
 export const sakataLabBot = onRequest(server);
 export const sakataLabBotScheduler = onSchedule({
-    schedule: 'every day 12:11',
+    schedule: 'every day 16:00',
     timeZone: 'Asia/Tokyo',
-    timeoutSeconds: 540,
+    timeoutSeconds: 180,
 }, async () => {
-    await jupyterSessions({
+    await notifyUnusedBigNotebooks({
         slackApp,
         slackChannel: serverChannel,
     });

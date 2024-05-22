@@ -2,6 +2,7 @@ import type { App, KnownBlock } from '@slack/bolt';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import qs from 'qs';
+import { notifyAllBigNotebooks } from './jupyter-sessions';
 
 const stigmatized_mem_usage_threshold = 10;
 
@@ -158,6 +159,11 @@ const func = async ({ body, slackApp, slackChannel }: {
             blocks,
         });
     }
+    notifyAllBigNotebooks({
+        host: body.host.name,
+        slackApp,
+        slackChannel,
+    });
 };
 
 export default func;
