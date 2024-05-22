@@ -163,8 +163,7 @@ export const notifyAllBigNotebooks = async ({ host, slackApp, slackChannel }: {
     try {
         const usageData = await loginToCollectUsage(host as keyof typeof ports);
         const bigNotebooks = usageData.filter(data =>
-            data.executionState === 'idle'
-            && data.mem >= 5
+            data.mem >= 5
             && data.notebookPath
         ).sort((a, b) => - (a.mem - b.mem));
         if (bigNotebooks.length === 0) return;
@@ -191,7 +190,7 @@ export const notifyAllBigNotebooks = async ({ host, slackApp, slackChannel }: {
                             },
                             {
                                 type: 'text',
-                                text: ` ${notebook.mem}% `,
+                                text: ` ${notebook.mem.toFixed(1)}% `,
                                 style: {
                                     bold: true,
                                 },
@@ -229,7 +228,7 @@ export const notifyAllBigNotebooks = async ({ host, slackApp, slackChannel }: {
     }
     await slackApp.client.chat.postMessage({
         channel: slackChannel,
-        text: 'ノートブック情報',
+        text: 'メモリ食い食い notebook を発表するよ〜 :loudspeaker:',
         blocks,
     });
 };
@@ -283,7 +282,7 @@ export const notifyUnusedBigNotebooks = async ({ slackApp, slackChannel }: {
                                 },
                                 {
                                     type: 'text',
-                                    text: ` ${notebook.mem}% `,
+                                    text: ` ${notebook.mem.toFixed(1)}% `,
                                     style: {
                                         bold: true,
                                     },
