@@ -158,12 +158,12 @@ const func = async ({ body, slackApp, slackChannel }: {
             text: 'メモリ使用量が多いユーザーを発表するよ〜 :loudspeaker:',
             blocks,
         });
+        notifyAllBigNotebooks({
+            host: body.host.name,
+            slackApp,
+            slackChannel,
+        });
     }
-    notifyAllBigNotebooks({
-        host: body.host.name,
-        slackApp,
-        slackChannel,
-    });
 };
 
 export default func;
