@@ -92,7 +92,9 @@ setGlobalOptions({
     region: 'asia-northeast1',
 });
 
-export const sakataLabBot = onRequest(server);
+export const sakataLabBot = onRequest({
+    timeoutSeconds: 180,
+}, server);
 export const sakataLabBotScheduler = onSchedule({
     schedule: 'every day 16:00',
     timeZone: 'Asia/Tokyo',
