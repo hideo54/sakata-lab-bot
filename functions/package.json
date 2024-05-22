@@ -15,11 +15,14 @@
   "main": "lib/index.js",
   "dependencies": {
     "@slack/bolt": "^3.17.0",
+    "@types/common-tags": "^1.8.4",
     "body-parser": "^1.20.2",
-    "dayjs": "^1.11.10",
+    "common-tags": "^1.8.2",
+    "dayjs": "^1.11.11",
     "dotenv": "^16.0.3",
     "firebase-functions": "^4.8.2",
-    "node-ssh": "^13.1.0"
+    "node-ssh": "^13.1.0",
+    "scrape-it": "^6.1.2"
   },
   "devDependencies": {
     "@google-cloud/functions-framework": "^3.3.0",

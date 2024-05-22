@@ -3,17 +3,21 @@ import axios from 'axios';
 import bodyParser from 'body-parser';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import { onRequest } from 'firebase-functions/v2/https';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 
 import dotenv from 'dotenv';
 dotenv.config();
 
 import mackerel from './mackerel';
 import slackEvents from './slack-events';
+import jupyterSessions from './jupyter-sessions';
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const randomChannel = process.env.SLACK_RANDOM_CHANNEL!;
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const serverChannel = process.env.SLACK_SERVER_CHANNEL!;
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+const hideo54Channel = process.env.SLACK_HIDEO54_USERID!;
 
 const receiver = new ExpressReceiver({
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -91,3 +95,13 @@ setGlobalOptions({
 });
 
 export const sakataLabBot = onRequest(server);
+export const sakataLabBotScheduler = onSchedule({
+    schedule: 'every day 12:11',
+    timeZone: 'Asia/Tokyo',
+    timeoutSeconds: 540,
+}, async () => {
+    await jupyterSessions({
+        slackApp,
+        slackChannel: serverChannel,
+    });
+});
