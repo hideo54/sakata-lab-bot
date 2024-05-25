@@ -319,9 +319,11 @@ export const notifyUnusedBigNotebooks = async ({ slackApp, slackChannel }: {
             });
         }
     }
-    await slackApp.client.chat.postMessage({
-        channel: slackChannel,
-        text: 'しばらく使われていないデカ notebook を発表するよ〜 :loudspeaker:',
-        blocks,
-    });
+    if (blocks.length > 1) {
+        await slackApp.client.chat.postMessage({
+            channel: slackChannel,
+            text: 'しばらく使われていないデカ notebook を発表するよ〜 :loudspeaker:',
+            blocks,
+        });
+    }
 };
