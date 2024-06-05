@@ -163,7 +163,7 @@ export const notifyAllBigNotebooks = async ({ host, slackApp, slackChannel }: {
     try {
         const usageData = await loginToCollectUsage(host as keyof typeof ports);
         const bigNotebooks = usageData.filter(data =>
-            data.mem >= 5
+            data.mem >= 10
             && data.notebookPath
         ).sort((a, b) => - (a.mem - b.mem));
         if (bigNotebooks.length === 0) return;
@@ -252,11 +252,11 @@ export const notifyUnusedBigNotebooks = async ({ slackApp, slackChannel }: {
             const usageData = await loginToCollectUsage(host as keyof typeof ports);
             const bigNotebooks = usageData.filter(data =>
                 data.executionState === 'idle'
-                && data.mem >= 5
+                && data.mem >= 10
                 && data.notebookPath
             ).sort((a, b) => - (a.mem - b.mem));
             const unusedBigNotebooks = bigNotebooks.filter(notebook =>
-                dayjs(notebook.lastActivity).isBefore(dayjs().subtract(3, 'days'))
+                dayjs(notebook.lastActivity).isBefore(dayjs().subtract(5, 'days'))
             );
             if (unusedBigNotebooks.length === 0) continue;
             blocks.push({
