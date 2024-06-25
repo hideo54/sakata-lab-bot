@@ -217,6 +217,7 @@ export const notifyAllBigNotebooks = async ({ host, slackApp, slackChannel }: {
             ],
         });
     } catch (e) {
+        console.error(e);
         blocks.push({
             type: 'header',
             //@ts-expect-error not officially documented
@@ -309,6 +310,7 @@ export const notifyUnusedBigNotebooks = async ({ slackApp, slackChannel }: {
                 ],
             });
         } catch (e) {
+            console.error(e);
             blocks.push({
                 type: 'header',
                 //@ts-expect-error not officially documented
