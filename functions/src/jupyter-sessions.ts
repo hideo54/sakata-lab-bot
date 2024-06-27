@@ -119,6 +119,7 @@ const loginToCollectUsage = async (host: keyof typeof ports) => {
         for (const session of sessions) {
             const kernelId = session.kernel.id;
             const pid = await connection.exec(`ps aux | grep ${kernelId} | grep -v grep | awk '{print $2}'`, []);
+            if (!pid) continue;
             const psResult = await connection.exec('ps', [
                 '-p', pid,
                 '-o', '%cpu,%mem',
