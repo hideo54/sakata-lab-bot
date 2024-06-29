@@ -118,8 +118,11 @@ const loginToCollectUsage = async (host: keyof typeof ports) => {
         ) as SessionDetail[];
         for (const session of sessions) {
             const kernelId = session.kernel.id;
-            const pid = await connection.exec(`ps aux | grep ${kernelId} | grep -v grep | awk '{print $2}'`, []);
+            const pid = await connection.exec(`ps aux --sort -%mem | grep ${kernelId} | grep -v grep | awk '{print $2}'`, []);
             if (!pid) continue;
+            if (pid.split('\n').length > 1) {
+                console.warn(`Multiple PIDs found for kernel ID ${kernelId}.`);
+            }
             const psResult = await connection.exec('ps', [
                 '-p', pid.split('\n')[0],
                 '-o', '%cpu,%mem',
