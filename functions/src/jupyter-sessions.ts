@@ -108,38 +108,42 @@ const loginToCollectUsage = async (host: keyof typeof ports) => {
             `http://localhost:${port}/login`,
         ]);
         const cookie = headers.split('\n').find(line => line.startsWith('Set-Cookie: '))?.replace('Set-Cookie: ', '').split(';')[0];
-        const sessions = JSON.parse(
-            await connection.exec('curl', [
-                '--silent',
-                '-H', 'Content-Type: application/json',
-                '-H', `Cookie: ${cookie}`,
-                `http://localhost:${port}/api/sessions`,
-            ])
-        ) as SessionDetail[];
-        for (const session of sessions) {
-            const kernelId = session.kernel.id;
-            const pid = await connection.exec(`ps aux --sort -%mem | grep ${kernelId} | grep -v grep | awk '{print $2}'`, []);
-            if (!pid) continue;
-            if (pid.split('\n').length > 1) {
-                console.warn(`Multiple PIDs found for kernel ID ${kernelId}.`);
+        if (cookie) {
+            const sessions = JSON.parse(
+                await connection.exec('curl', [
+                    '--silent',
+                    '-H', 'Content-Type: application/json',
+                    '-H', `Cookie: ${cookie}`,
+                    `http://localhost:${port}/api/sessions`,
+                ])
+            ) as SessionDetail[];
+            for (const session of sessions) {
+                const kernelId = session.kernel.id;
+                const pid = await connection.exec(`ps aux --sort -%mem | grep ${kernelId} | grep -v grep | awk '{print $2}'`, []);
+                if (!pid) continue;
+                if (pid.split('\n').length > 1) {
+                    console.warn(`Multiple PIDs found for kernel ID ${kernelId}.`);
+                }
+                const psResult = await connection.exec('ps', [
+                    '-p', pid.split('\n')[0],
+                    '-o', '%cpu,%mem',
+                    '--no-headers',
+                ]);
+                const [cpu, mem] = psResult.split(' ').filter(s => s !== '').map(s => Number(s));
+                usageData.push({
+                    host,
+                    user,
+                    notebookPath: session.notebook?.path,
+                    executionState: session.kernel.execution_state,
+                    connections: session.kernel.connections,
+                    lastActivity: session.kernel.last_activity,
+                    pid,
+                    cpu,
+                    mem,
+                });
             }
-            const psResult = await connection.exec('ps', [
-                '-p', pid.split('\n')[0],
-                '-o', '%cpu,%mem',
-                '--no-headers',
-            ]);
-            const [cpu, mem] = psResult.split(' ').filter(s => s !== '').map(s => Number(s));
-            usageData.push({
-                host,
-                user,
-                notebookPath: session.notebook?.path,
-                executionState: session.kernel.execution_state,
-                connections: session.kernel.connections,
-                lastActivity: session.kernel.last_activity,
-                pid,
-                cpu,
-                mem,
-            });
+        } else {
+            console.error(`Cookie not found for user ${user}.`);
         }
     }
     connection.dispose();
