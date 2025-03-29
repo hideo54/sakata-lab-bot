@@ -1,7 +1,8 @@
 import type { App, KnownBlock } from '@slack/bolt';
-import axios from 'axios';
+import axios, { type AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import qs from 'qs';
+import { scrapeHTML } from 'scrape-it';
 import { notifyAllBigNotebooks } from './jupyter-sessions';
 
 const stigmatized_mem_usage_threshold = 10;
@@ -11,8 +12,41 @@ const headers = {
     'X-Api-Key': process.env.MACKEREL_API_KEY!,
 };
 
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-const play2authSessId = process.env.MACKEREL_PLAY2AUTH_SESS_ID!;
+const getPlay2AuthSessId = async () => {
+    const getCookie = (cookieStrs: string[] | undefined, targetKey: string) => cookieStrs?.find(s => s.startsWith(`${targetKey}=`))?.split(';')?.[0].split('=')?.[1];
+    const getSignInRes = await axios.get('https://mackerel.io/signin');
+    const playSession = getCookie(getSignInRes.headers['set-cookie'], 'PLAY_SESSION');
+    const { csrfToken } = scrapeHTML<{
+        csrfToken: string;
+    }>(getSignInRes.data, {
+        csrfToken: {
+            selector: 'input[name="csrfToken"]',
+            attr: 'value',
+        },
+    });
+    const play2AuthSessId = await axios.post(
+        'https://mackerel.io/signin',
+        {
+            email: process.env.MACKEREL_USER_EMAIL,
+            password: process.env.MACKEREL_USER_PASSWORD,
+            csrfToken,
+        },
+        {
+            headers: {
+                // 'Content-Type': 'application/x-www-form-urlencoded',
+                Cookie: `PLAY_SESSION=${playSession}; timezoneName=Asia%2FTokyo`,
+                // Referer: 'https://mackerel.io/signin',
+            },
+            maxRedirects: 0,
+        },
+    ).catch(({ response }: AxiosError) =>
+        getCookie(
+            response?.headers['set-cookie'],
+            'PLAY2AUTH_SESS_ID'
+        )
+    );
+    return play2AuthSessId;
+};
 
 const getTopMemConsumers = async (hostId: string) => {
     const { data: allMetricsData } = await axios.get<{
@@ -67,8 +101,9 @@ const createMemConsumerDisplayBlocks = async (hostId: string, hostname: string, 
     const now = dayjs();
     const nowStr = now.toISOString().slice(0, -5) + 'Z';
     const pastStr = now.subtract(3, 'hour').toISOString().slice(0, -5) + 'Z';
+    const play2AuthSessId = await getPlay2AuthSessId();
     const imageUrl = `https://asia-northeast1-hideo54.cloudfunctions.net/sakataLabBot/mackerel/graphs/${hostId}/custom.user_mem.*`
-        + `?PLAY2AUTH_SESS_ID=${play2authSessId}`
+        + `?PLAY2AUTH_SESS_ID=${play2AuthSessId}`
         + `&t=${pastStr},${nowStr}`;
     const imageAvailable = await axios.get(imageUrl).then(() => true).catch(() => false);
     if (imageAvailable) {
