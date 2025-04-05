@@ -1,4 +1,5 @@
 import type { App, ExpressReceiver } from '@slack/bolt';
+import { addPublicKey, createUser } from './ti';
 
 const func = ({ slackApp, receiver, channel }: {
     slackApp: App;
@@ -45,6 +46,79 @@ const func = ({ slackApp, receiver, channel }: {
             username: '絵文字お知らせ',
             text,
         });
+    });
+
+    slackApp.command('/create-ti-account', async ({ command, ack, respond }) => {
+        await ack();
+        const { text } = command;
+        const username = text.trim().split(' ')[0].normalize('NFKC');
+        const args = text.trim().split(' ').slice(1);
+        const supportedHosts = [
+            'ti01',
+            'ti02',
+            'ti03',
+            'ti04',
+            'ti05',
+        ] as const;
+        const defaultHosts: typeof supportedHosts[number][] = [
+            'ti01',
+            // 'ti02', // limited use only
+            'ti03',
+            'ti04',
+            'ti05',
+        ];
+        const specifiedHosts = supportedHosts.filter(host => args.includes(host));
+        const hosts = specifiedHosts.length > 0 ? specifiedHosts : defaultHosts;
+
+        const { successfulHosts, id } = await createUser(username, hosts);
+        if (successfulHosts.length === 0) {
+            respond({
+                text: `ユーザー ${username} の作成に失敗しました`,
+                response_type: 'in_channel',
+            });
+        } else {
+            respond({
+                text: `ユーザー ${username} を ${hosts.join(', ')} に作成しました (UID: ${id})`,
+                response_type: 'in_channel',
+            });
+        }
+    });
+
+    slackApp.command('/add-public-key', async ({ command, ack, respond }) => {
+        await ack();
+        const { text } = command;
+        const username = text.trim().split(' ')[0];
+        const publicKey = text.trim().split(' ').slice(1, 4).join(' ');
+        const args = text.trim().split(' ').slice(4);
+        const supportedHosts = [
+            'ti01',
+            'ti02',
+            'ti03',
+            'ti04',
+            'ti05',
+        ] as const;
+        const defaultHosts: typeof supportedHosts[number][] = [
+            'ti01',
+            // 'ti02', // limited use only
+            'ti03',
+            'ti04',
+            'ti05',
+        ];
+        const specifiedHosts = supportedHosts.filter(host => args.includes(host));
+        const hosts = specifiedHosts.length > 0 ? specifiedHosts : defaultHosts;
+
+        const { successfulHosts } = await addPublicKey(username, publicKey, hosts);
+        if (successfulHosts.length === 0) {
+            respond({
+                text: '失敗しました… :cry:',
+                response_type: 'in_channel',
+            });
+        } else {
+            respond({
+                text: `ご指定の鍵を ${hosts.join(', ')} に作成しました :+1:`,
+                response_type: 'in_channel',
+            });
+        }
     });
     return receiver.app;
 };

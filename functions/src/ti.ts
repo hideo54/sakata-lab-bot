@@ -33,32 +33,46 @@ const optionsForSudo = {
     },
 };
 
-const userExists = async (connection: NodeSSH, username: string) => {
+const intersectionAll = (arrays: number[][]): number[] =>
+    arrays.length === 0
+        ? []
+        : arrays.reduce((acc, curr) => acc.filter((num) => curr.includes(num)));
+
+const getUserIdIfExists = async (connection: NodeSSH, username: string) => {
     const passwdFileStr = await connection.exec('cat', ['/etc/passwd']);
-    const usernames = passwdFileStr.split('\n').map(line => line.split(':')[0]);
-    return usernames.includes(username);
+    const passwdFileLines = passwdFileStr.split('\n');
+    const usernames = passwdFileLines.map(line => line.split(':')[0]);
+    if (usernames.includes(username)) {
+        const line = passwdFileLines.find(line => line.includes(username + ':'));
+        if (!line) return null;
+        const [,, uid] = line.split(':');
+        return Number(uid);
+    }
+    return null;
 };
 
-const findAvailableId = async (connection: NodeSSH) => {
+const findAvailableIds = async (connection: NodeSSH) => {
     const passwdFileStr = await connection.exec('cat', ['/etc/passwd']);
     const reservedUidAndGids = passwdFileStr.split('\n').map(line => {
         const [,, uid, gid] = line.split(':');
         return [Number(uid), Number(gid)];
     });
-    const availableId = range(1100, 2000).find(id => !reservedUidAndGids.some(([uid, gid]) => uid === id || gid === id));
-    return availableId;
+    const availableIds = range(1100, 2000).filter(id => !reservedUidAndGids.some(([uid, gid]) => uid === id || gid === id));
+    return availableIds;
 };
 
-export const createUser = async (username: string, hosts: (keyof typeof ports)[], publicKey: string) => {
-    let id: number | undefined = undefined;
+export const createUser = async (username: string, hosts: (keyof typeof ports)[]) => {
+    const availableIdsDict: {[key: string]: number[]} = {};
+    const connections: {[key: string]: NodeSSH} = {};
+
+    const ssh = new NodeSSH();
+    const proxyConnection = await ssh.connect({
+        ...proxyInfo,
+        ...privateKeyInfo,
+    });
+    console.log('Connected to the proxy.');
 
     for (const host of hosts) {
-        const ssh = new NodeSSH();
-        const proxyConnection = await ssh.connect({
-            ...proxyInfo,
-            ...privateKeyInfo,
-        });
-        console.log('Connected to the proxy.');
         const stream = await proxyConnection.forwardOut('127.0.0.1', ports[host], ti_ip, ports[host]);
         const connection = await ssh.connect({
             ...privateKeyInfo,
@@ -68,15 +82,28 @@ export const createUser = async (username: string, hosts: (keyof typeof ports)[]
             port: ports[host],
         });
         console.log(`Connected to ${host}.`);
+        connections[host] = connection;
 
-        if (await userExists(connection, username)) {
+        const uid = await getUserIdIfExists(connection, username);
+
+        if (uid) {
             console.log(`User ${username} already exists on ${host}.`);
-            connection.dispose();
-            continue;
+            availableIdsDict[host] = [uid];
+        } else {
+            const availableIds = await findAvailableIds(connection);
+            availableIdsDict[host] = availableIds;
         }
+    }
 
-        if (!id) {
-            id = await findAvailableId(connection);
+    const id = intersectionAll(Object.values(availableIdsDict))[0];
+    const successfulHosts: string[] = [];
+
+    for (const host of hosts) {
+        const connection = connections[host];
+
+        if (availableIdsDict[host].length === 1) {
+            console.log(`User ${username} already exists on ${host}.`);
+            continue;
         }
 
         await connection.exec('sudo', ['-S', 'groupadd', '-g', String(id), username], optionsForSudo);
@@ -90,17 +117,56 @@ export const createUser = async (username: string, hosts: (keyof typeof ports)[]
         await connection.exec('sudo', ['-S', 'usermod', '-a', '-G', 'docker', username], optionsForSudo);
         console.log(`Created user ${username} (UID & GID: ${id}) on ${host}.`);
 
-        // Add public key
         await connection.exec('sudo', ['-S', 'mkdir', `/home/${username}/.ssh`], optionsForSudo);
         await connection.exec('sudo', ['-S', 'chown', `${username}:${username}`, `/home/${username}/.ssh`], optionsForSudo);
         await connection.exec('sudo', ['-S', 'chmod', '700', `/home/${username}/.ssh`], optionsForSudo);
-        await connection.exec('sudo', ['bash', '-c', `echo "${publicKey}" > /home/${username}/.ssh/authorized_keys`], optionsForSudo);
+        await connection.exec('sudo', ['-S', 'touch', `/home/${username}/.ssh/authorized_keys`], optionsForSudo);
         await connection.exec('sudo', ['-S', 'chown', `${username}:${username}`, `/home/${username}/.ssh/authorized_keys`], optionsForSudo);
         await connection.exec('sudo', ['-S', 'chmod', '600', `/home/${username}/.ssh/authorized_keys`], optionsForSudo);
-        console.log(`Added public key to ${username} on ${host}.`);
 
         connection.dispose();
         proxyConnection.dispose();
+
+        successfulHosts.push(host);
     }
     console.log('Done.');
+    return { successfulHosts, id };
+};
+
+export const addPublicKey = async (username: string, publicKey: string, hosts: (keyof typeof ports)[]) => {
+    const ssh = new NodeSSH();
+    const proxyConnection = await ssh.connect({
+        ...proxyInfo,
+        ...privateKeyInfo,
+    });
+    console.log('Connected to the proxy.');
+
+    const successfulHosts: string[] = [];
+
+    for (const host of hosts) {
+        try {
+            const stream = await proxyConnection.forwardOut('127.0.0.1', ports[host], ti_ip, ports[host]);
+            const connection = await ssh.connect({
+                ...privateKeyInfo,
+                sock: stream,
+                host: ti_ip,
+                username: bot_username,
+                port: ports[host],
+            });
+            console.log(`Connected to ${host}.`);
+
+
+            await connection.exec('sudo', ['bash', '-c', `echo "${publicKey}" >> /home/${username}/.ssh/authorized_keys`], optionsForSudo);
+            console.log(`Added public key to ${username} on ${host}.`);
+
+            connection.dispose();
+            proxyConnection.dispose();
+
+            successfulHosts.push(host);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+    console.log('Done.');
+    return { successfulHosts };
 };

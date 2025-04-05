@@ -31,6 +31,7 @@ const slackApp = new App({
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     signingSecret: process.env.SLACK_SIGNING_SECRET!,
     receiver,
+    processBeforeResponse: true,
 });
 
 const server = receiver.app;
