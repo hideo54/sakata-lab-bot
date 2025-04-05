@@ -119,7 +119,7 @@ const func = ({ slackApp, receiver, channel }: {
             });
         } else {
             respond({
-                text: `ご指定の鍵を ${hosts.join(', ')} に作成しました :+1:`,
+                text: `${hosts.join(', ')} 上の ${username} にご指定の鍵を追加しました :+1:`,
                 response_type: 'in_channel',
             });
         }
