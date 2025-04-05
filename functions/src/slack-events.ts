@@ -49,7 +49,9 @@ const func = ({ slackApp, receiver, channel }: {
     });
 
     slackApp.command('/create-ti-account', async ({ command, ack, respond }) => {
-        await ack();
+        await ack({
+            response_type: 'in_channel',
+        });
         const { text } = command;
         const username = text.trim().split(' ')[0].normalize('NFKC');
         const args = text.trim().split(' ').slice(1);
@@ -85,7 +87,9 @@ const func = ({ slackApp, receiver, channel }: {
     });
 
     slackApp.command('/add-public-key', async ({ command, ack, respond }) => {
-        await ack();
+        await ack({
+            response_type: 'in_channel',
+        });
         const { text } = command;
         const username = text.trim().split(' ')[0];
         const publicKey = text.trim().split(' ').slice(1, 4).join(' ');
