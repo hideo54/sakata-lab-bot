@@ -1,7 +1,8 @@
 import { defineConfig } from 'oxfmt';
 
 export default defineConfig({
-  singleQuote: true,
-  jsxSingleQuote: true,
-  printWidth: 80,
+    jsxSingleQuote: true,
+    printWidth: 80,
+    singleQuote: true,
+    tabWidth: 4,
 });
