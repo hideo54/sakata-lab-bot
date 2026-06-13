@@ -17,9 +17,6 @@ importers:
       body-parser:
         specifier: ^2.2.2
         version: 2.2.2
-      cheerio:
-        specifier: ^1.2.0
-        version: 1.2.0
       common-tags:
         specifier: ^1.8.2
         version: 1.8.2
@@ -36,8 +33,8 @@ importers:
         specifier: ^13.2.1
         version: 13.2.1
       scrape-it:
-        specifier: ^6.1.12
-        version: 6.1.12
+        specifier: ^6.1.2
+        version: 6.1.2
     devDependencies:
       '@google-cloud/functions-framework':
         specifier: ^5.0.2
@@ -45,6 +42,9 @@ importers:
       '@slack/types':
         specifier: ^2.21.1
         version: 2.21.1
+      '@types/node':
+        specifier: ^25.9.3
+        version: 25.9.3
       '@types/ssh2-streams':
         specifier: ^0.1.13
         version: 0.1.13
@@ -331,6 +331,9 @@ packages:
 
   '@types/caseless@0.12.5':
     resolution: {integrity: sha512-hWtVTC2q7hc7xZ/RLbxapMvDMgUnDvKvMOpKal4DrMyfGBUfB1oKaZlIRr6mJL+If3bAP6sV/QneGzF6tJjZDg==}
+
+  '@types/cheerio@0.22.35':
+    resolution: {integrity: sha512-yD57BchKRvTV+JD53UZ6PD8KWY5g5rvvMLRnZR3EQBCZXiDT/HR+pKpMzFGlWNhFrXlo7VPZXtKvIEwZkAWOIA==}
 
   '@types/common-tags@1.8.4':
     resolution: {integrity: sha512-S+1hLDJPjWNDhcGxsxEbepzaxWqURP/o+3cP4aa2w7yBXgdcmKGQtZzP8JbyfOd0m+33nh+8+kvxYE2UJtBDkg==}
@@ -1341,8 +1344,8 @@ packages:
   scrape-it-core@1.0.2:
     resolution: {integrity: sha512-gXtUSsL/ikNMTz1678Bge++kfuV0o2fGtkMB+tRO2+J9fyZBkjvFJqjbAFYjb9SHsgb0hT0v0nWa3MVk0rvhsA==}
 
-  scrape-it@6.1.12:
-    resolution: {integrity: sha512-z7ccxo5X16J+bV3RCqlrbyaahMxvzyuhW0VCUoYx8z1joahPkr6aJMChhxmiFE4C3ufTLJTNAOTaCE2tMjCdnw==}
+  scrape-it@6.1.2:
+    resolution: {integrity: sha512-58DMh1/I68d49wP3By+9ulwy6Nwy52iix13m+gB1KjkIpREa8cyqMXTHffgn1BWgHUFHr5ON9SNbcoMSuCFmXA==}
 
   semver@6.3.1:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
@@ -1906,6 +1909,10 @@ snapshots:
 
   '@types/caseless@0.12.5':
     optional: true
+
+  '@types/cheerio@0.22.35':
+    dependencies:
+      '@types/node': 25.9.3
 
   '@types/common-tags@1.8.4': {}
 
@@ -3158,12 +3165,13 @@ snapshots:
       obj-def: 1.0.10
       typpy: 2.4.0
 
-  scrape-it@6.1.12:
+  scrape-it@6.1.2:
     dependencies:
+      '@types/cheerio': 0.22.35
       assured: 1.0.16
-      cheerio: 1.2.0
       cheerio-req: 2.0.1
       scrape-it-core: 1.0.2
+      typpy: 2.4.0
     transitivePeerDependencies:
       - debug
       - supports-color

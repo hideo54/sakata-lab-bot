@@ -15,17 +15,17 @@
     "@slack/bolt": "^4.7.3",
     "@types/common-tags": "^1.8.4",
     "body-parser": "^2.2.2",
-    "cheerio": "^1.2.0",
     "common-tags": "^1.8.2",
     "dayjs": "^1.11.21",
     "dotenv": "^17.4.2",
     "firebase-functions": "^7.2.5",
     "node-ssh": "^13.2.1",
-    "scrape-it": "^6.1.12"
+    "scrape-it": "^6.1.2"
   },
   "devDependencies": {
     "@google-cloud/functions-framework": "^5.0.2",
     "@slack/types": "^2.21.1",
+    "@types/node": "^25.9.3",
     "@types/ssh2-streams": "^0.1.13",
     "oxfmt": "^0.54.0",
     "typescript": "^6.0.3"
