@@ -27,7 +27,10 @@ const proxyInfo = {
 const ti_ip = process.env.TI_IP!;
 const bot_username = process.env.TI_BOT_USERNAME;
 
-const ports = {
+
+const hostNames = ['ti01', 'ti02', 'ti03', 'ti04', 'ti05'] as const;
+
+const ports: Record<typeof hostNames[number], number> = {
     ti01: 10022,
     ti02: 20022,
     ti03: 30022,
@@ -256,7 +259,7 @@ export const notifyUnusedBigNotebooks = async ({ slackApp, slackChannel }: {
             },
         },
     ];
-    for (const host of ['ti01', 'ti02', 'ti03', 'ti04', 'ti05']) {
+    for (const host of hostNames) {
         try {
             const usageData = await loginToCollectUsage(host as keyof typeof ports);
             const bigNotebooks = usageData.filter(data =>
