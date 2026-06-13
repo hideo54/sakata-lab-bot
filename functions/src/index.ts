@@ -87,7 +87,7 @@ server.get("/mackerel/graphs/:hostId/:metricLabel", async (req, res) => {
         responseType: "arraybuffer",
       },
     );
-    if (typeof mackerelRes.headers["content-type"] === 'string') {
+    if (typeof mackerelRes.headers["content-type"] === "string") {
       res.setHeader("Content-Type", mackerelRes.headers["content-type"]);
     }
     res.send(mackerelRes.data);
