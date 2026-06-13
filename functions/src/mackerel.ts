@@ -1,7 +1,5 @@
 import type { App } from "@slack/bolt";
 import type { KnownBlock } from "@slack/types";
-import axios, { type AxiosError } from "axios";
-import qs from "qs";
 import { scrapeHTML } from "scrape-it";
 import { notifyAllBigNotebooks } from "./jupyter-sessions";
 import { uploadMackerelGraph } from "./storage";
@@ -19,50 +17,48 @@ const getPlay2AuthSessId = async () => {
       ?.find((s) => s.startsWith(`${targetKey}=`))
       ?.split(";")?.[0]
       .split("=")?.[1];
-  const getSignInRes = await axios.get("https://mackerel.io/signin");
-  const playSession = getCookie(getSignInRes.headers["set-cookie"], "PLAY_SESSION");
+  const getSignInRes = await fetch("https://mackerel.io/signin");
+  const playSession = getCookie(getSignInRes.headers.getSetCookie(), "PLAY_SESSION");
   const { csrfToken } = scrapeHTML<{
     csrfToken: string;
-  }>(getSignInRes.data, {
+  }>(await getSignInRes.text(), {
     csrfToken: {
       selector: 'input[name="csrfToken"]',
       attr: "value",
     },
   });
-  const play2AuthSessId = await axios
-    .post(
-      "https://mackerel.io/signin",
-      {
-        email: process.env.MACKEREL_USER_EMAIL,
-        password: process.env.MACKEREL_USER_PASSWORD,
-        csrfToken,
-      },
-      {
-        headers: {
-          // 'Content-Type': 'application/x-www-form-urlencoded',
-          Cookie: `PLAY_SESSION=${playSession}; timezoneName=Asia%2FTokyo`,
-          // Referer: 'https://mackerel.io/signin',
-        },
-        maxRedirects: 0,
-      },
-    )
-    .then(() => undefined)
-    .catch(({ response }: AxiosError) =>
-      getCookie(response?.headers["set-cookie"], "PLAY2AUTH_SESS_ID"),
-    );
-  return play2AuthSessId;
+  // A successful sign-in responds with a redirect; we read the PLAY2AUTH_SESS_ID
+  // cookie from that response instead of following it.
+  const signInRes = await fetch("https://mackerel.io/signin", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: `PLAY_SESSION=${playSession}; timezoneName=Asia%2FTokyo`,
+    },
+    body: JSON.stringify({
+      email: process.env.MACKEREL_USER_EMAIL,
+      password: process.env.MACKEREL_USER_PASSWORD,
+      csrfToken,
+    }),
+    redirect: "manual",
+  });
+  return getCookie(signInRes.headers.getSetCookie(), "PLAY2AUTH_SESS_ID");
 };
 
 const getTopMemConsumers = async (hostId: string) => {
-  const { data: allMetricsData } = await axios.get<{
-    names: string[];
-  }>(`https://api.mackerelio.com/api/v0/hosts/${hostId}/metric-names`, {
-    headers,
-  });
+  const allMetricsData = (await (
+    await fetch(`https://api.mackerelio.com/api/v0/hosts/${hostId}/metric-names`, {
+      headers,
+    })
+  ).json()) as { names: string[] };
   const userMemMetricNames = allMetricsData.names.filter((name) =>
     name.startsWith("custom.user_mem."),
   );
-  const { data: allTsdbData } = await axios.get<{
+  const tsdbParams = new URLSearchParams({ hostId });
+  for (const name of userMemMetricNames) {
+    tsdbParams.append("name", name);
+  }
+  const allTsdbData: {
     tsdbLatest: {
       [key: string]: {
         [key: string]: {
@@ -71,14 +67,11 @@ const getTopMemConsumers = async (hostId: string) => {
         } | null;
       };
     };
-  }>("https://api.mackerelio.com/api/v0/tsdb/latest", {
-    params: {
-      hostId,
-      name: userMemMetricNames,
-    },
-    paramsSerializer: (params) => qs.stringify(params, { arrayFormat: "repeat" }),
-    headers,
-  });
+  } = await (
+    await fetch(`https://api.mackerelio.com/api/v0/tsdb/latest?${tsdbParams}`, {
+      headers,
+    })
+  ).json();
   const top = Object.entries(allTsdbData.tsdbLatest[hostId])
     .map(([k, v]) => [k, v?.value] as const)
     .filter(([, v]) => v !== undefined && v > stigmatized_mem_usage_threshold)

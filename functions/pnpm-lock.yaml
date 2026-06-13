@@ -23,12 +23,6 @@ importers:
       '@types/common-tags':
         specifier: ^1.8.4
         version: 1.8.4
-      '@types/qs':
-        specifier: ^6.15.1
-        version: 6.15.1
-      axios:
-        specifier: ^1.17.0
-        version: 1.17.0
       body-parser:
         specifier: ^2.2.2
         version: 2.2.2
@@ -47,9 +41,6 @@ importers:
       node-ssh:
         specifier: ^13.2.1
         version: 13.2.1
-      qs:
-        specifier: ^6.15.2
-        version: 6.15.2
       scrape-it:
         specifier: ^6.1.2
         version: 6.1.2
