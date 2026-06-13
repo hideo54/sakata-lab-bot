@@ -1,5 +1,4 @@
 import { App, ExpressReceiver } from "@slack/bolt";
-import axios from "axios";
 import bodyParser from "body-parser";
 import { setGlobalOptions } from "firebase-functions/v2";
 import { onRequest } from "firebase-functions/v2/https";
@@ -59,41 +58,6 @@ server.post("/mackerel", (req, res) => {
     slackChannel: serverChannel,
   });
   res.status(200).send("OK");
-});
-
-const createCookieString = (cookieObject: object) =>
-  Object.entries(cookieObject)
-    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-    .join("; ");
-
-// Mackerel Graph Proxy
-server.get("/mackerel/graphs/:hostId/:metricLabel", async (req, res) => {
-  const { hostId, metricLabel } = req.params;
-  const { PLAY2AUTH_SESS_ID, ...query } = req.query;
-  try {
-    const mackerelRes = await axios.get(
-      `https://mackerel.io/embed/orgs/sakata-lab/hosts/${hostId}.png`,
-      {
-        params: {
-          graph: metricLabel,
-          ...query,
-        },
-        headers: {
-          Cookie: createCookieString({
-            timezoneName: "Asia/Tokyo",
-            PLAY2AUTH_SESS_ID,
-          }),
-        },
-        responseType: "arraybuffer",
-      },
-    );
-    if (typeof mackerelRes.headers["content-type"] === "string") {
-      res.setHeader("Content-Type", mackerelRes.headers["content-type"]);
-    }
-    res.send(mackerelRes.data);
-  } catch (e) {
-    res.status(500).send("Error");
-  }
 });
 
 setGlobalOptions({

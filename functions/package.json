@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@google-cloud/functions-framework": "^5.0.2",
+    "@google-cloud/storage": "^7.21.0",
     "@slack/bolt": "^4.7.3",
     "@types/body-parser": "^1.19.6",
     "@types/common-tags": "^1.8.4",

@@ -1,10 +1,10 @@
 import type { App } from "@slack/bolt";
 import type { KnownBlock } from "@slack/types";
 import axios, { type AxiosError } from "axios";
-import dayjs from "dayjs";
 import qs from "qs";
 import { scrapeHTML } from "scrape-it";
 import { notifyAllBigNotebooks } from "./jupyter-sessions";
+import { uploadMackerelGraph } from "./storage";
 
 const stigmatized_mem_usage_threshold = 10;
 
@@ -46,6 +46,7 @@ const getPlay2AuthSessId = async () => {
         maxRedirects: 0,
       },
     )
+    .then(() => undefined)
     .catch(({ response }: AxiosError) =>
       getCookie(response?.headers["set-cookie"], "PLAY2AUTH_SESS_ID"),
     );
@@ -109,19 +110,9 @@ const createMemConsumerDisplayBlocks = async (
       text: lines.join("\n"),
     },
   });
-  const now = dayjs();
-  const nowStr = now.toISOString().slice(0, -5) + "Z";
-  const pastStr = now.subtract(3, "hour").toISOString().slice(0, -5) + "Z";
   const play2AuthSessId = await getPlay2AuthSessId();
-  const imageUrl =
-    `https://asia-northeast1-hideo54.cloudfunctions.net/sakataLabBot/mackerel/graphs/${hostId}/custom.user_mem.*` +
-    `?PLAY2AUTH_SESS_ID=${play2AuthSessId}` +
-    `&t=${pastStr},${nowStr}`;
-  const imageAvailable = await axios
-    .get(imageUrl)
-    .then(() => true)
-    .catch(() => false);
-  if (imageAvailable) {
+  const publicImageUrl = await uploadMackerelGraph({ hostId, play2AuthSessId });
+  if (publicImageUrl) {
     blocks.push({
       type: "image",
       title: {
@@ -129,7 +120,7 @@ const createMemConsumerDisplayBlocks = async (
         text: "Memory usage by users",
         emoji: true,
       },
-      image_url: imageUrl,
+      image_url: publicImageUrl,
       alt_text: "Memory usage by users",
     });
   }
