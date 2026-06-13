@@ -2,6 +2,7 @@ allowBuilds:
   '@firebase/util': true
   cpu-features: true
   protobufjs: true
+  re2: true
   ssh2: true
   unrs-resolver: true
 minimumReleaseAge: 1440 # 1 day
