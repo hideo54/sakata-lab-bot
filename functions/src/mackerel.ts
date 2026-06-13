@@ -132,17 +132,6 @@ const createMemConsumerDisplayBlocks = async (
       image_url: imageUrl,
       alt_text: "Memory usage by users",
     });
-  } else {
-    blocks.push({
-      type: "context",
-      elements: [
-        {
-          type: "mrkdwn",
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          text: `Image Unavailable; reset PLAY2AUTH_SESS_ID. <@${process.env.SLACK_HIDEO54_USERID!}>`,
-        },
-      ],
-    });
   }
   return blocks;
 };
