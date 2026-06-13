@@ -28,11 +28,17 @@ const ti_ip = process.env.TI_IP!;
 const bot_username = process.env.TI_BOT_USERNAME;
 
 
-const hostNames = ['ti01', 'ti02', 'ti03', 'ti04', 'ti05'] as const;
+const hostNames = [
+    'ti01',
+    // 'ti02',
+    'ti03',
+    'ti04',
+    'ti05',
+] as const;
 
 const ports: Record<typeof hostNames[number], number> = {
     ti01: 10022,
-    ti02: 20022,
+    // ti02: 20022,
     ti03: 30022,
     ti04: 40022,
     ti05: 50022,
