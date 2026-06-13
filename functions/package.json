@@ -1,5 +1,7 @@
 {
   "name": "functions",
+  "private": true,
+  "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
     "serve": "npm run build && firebase emulators:start --only functions",
@@ -10,10 +12,6 @@
     "lint": "eslint src",
     "logs": "firebase functions:log"
   },
-  "engines": {
-    "node": "24"
-  },
-  "main": "lib/index.js",
   "dependencies": {
     "@slack/bolt": "^3.17.0",
     "@types/common-tags": "^1.8.4",
@@ -32,5 +30,7 @@
     "oxfmt": "^0.54.0",
     "typescript": "^5.0.4"
   },
-  "private": true
+  "engines": {
+    "node": "24"
+  }
 }
