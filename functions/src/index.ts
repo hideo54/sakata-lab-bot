@@ -1,15 +1,15 @@
-import { App, ExpressReceiver } from "@slack/bolt";
-import bodyParser from "body-parser";
-import { setGlobalOptions } from "firebase-functions/v2";
-import { onRequest } from "firebase-functions/v2/https";
-import { onSchedule } from "firebase-functions/v2/scheduler";
+import { App, ExpressReceiver } from '@slack/bolt';
+import bodyParser from 'body-parser';
+import { setGlobalOptions } from 'firebase-functions/v2';
+import { onRequest } from 'firebase-functions/v2/https';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 
-import dotenv from "dotenv";
+import dotenv from 'dotenv';
 dotenv.config();
 
-import mackerel from "./mackerel";
-import slackEvents from "./slack-events";
-import { notifyUnusedBigNotebooks } from "./jupyter-sessions";
+import mackerel from './mackerel';
+import slackEvents from './slack-events';
+import { notifyUnusedBigNotebooks } from './jupyter-sessions';
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const randomChannel = process.env.SLACK_RANDOM_CHANNEL!;
@@ -39,8 +39,12 @@ server.use(bodyParser.json());
 
 server.use((req, res, next) => {
   // https://api.slack.com/apis/connections/events-api#retries
-  if (req.headers["X-Slack-Retry-Reason"] === "http_timeout") {
-    res.status(200).send("Your previous request was actually accepted and no need to retry.");
+  if (req.headers['X-Slack-Retry-Reason'] === 'http_timeout') {
+    res
+      .status(200)
+      .send(
+        'Your previous request was actually accepted and no need to retry.',
+      );
   }
   next();
 });
@@ -51,17 +55,17 @@ slackEvents({
   channel: randomChannel,
 });
 
-server.post("/mackerel", (req, res) => {
+server.post('/mackerel', (req, res) => {
   mackerel({
     body: req.body,
     slackApp,
     slackChannel: serverChannel,
   });
-  res.status(200).send("OK");
+  res.status(200).send('OK');
 });
 
 setGlobalOptions({
-  region: "asia-northeast1",
+  region: 'asia-northeast1',
 });
 
 export const sakataLabBot = onRequest(
@@ -72,8 +76,8 @@ export const sakataLabBot = onRequest(
 );
 export const sakataLabBotScheduler = onSchedule(
   {
-    schedule: "every day 16:00",
-    timeZone: "Asia/Tokyo",
+    schedule: 'every day 16:00',
+    timeZone: 'Asia/Tokyo',
     timeoutSeconds: 180,
   },
   async () => {

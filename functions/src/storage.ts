@@ -1,13 +1,16 @@
-import { Storage } from "@google-cloud/storage";
-import dayjs from "dayjs";
+import { Storage } from '@google-cloud/storage';
+import dayjs from 'dayjs';
 
 const storage = new Storage();
-const bucket = storage.bucket("img.hideo54.com");
+const bucket = storage.bucket('img.hideo54.com');
 
 const createCookieString = (cookieObject: object) =>
   Object.entries(cookieObject)
-    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-    .join("; ");
+    .map(
+      ([key, value]) =>
+        `${encodeURIComponent(key)}=${encodeURIComponent(value)}`,
+    )
+    .join('; ');
 
 export const uploadMackerelGraph = async ({
   hostId,
@@ -17,15 +20,17 @@ export const uploadMackerelGraph = async ({
   play2AuthSessId?: string;
 }) => {
   if (!play2AuthSessId) {
-    console.error("No PLAY2AUTH_SESS_ID available, cannot upload Mackerel graph.");
+    console.error(
+      'No PLAY2AUTH_SESS_ID available, cannot upload Mackerel graph.',
+    );
     return null;
   }
   try {
     const now = dayjs();
-    const nowStr = now.toISOString().slice(0, -5) + "Z";
-    const pastStr = now.subtract(3, "hour").toISOString().slice(0, -5) + "Z";
+    const nowStr = now.toISOString().slice(0, -5) + 'Z';
+    const pastStr = now.subtract(3, 'hour').toISOString().slice(0, -5) + 'Z';
     const params = new URLSearchParams({
-      graph: "custom.user_mem.*",
+      graph: 'custom.user_mem.*',
       t: `${pastStr},${nowStr}`,
     });
     const mackerelRes = await fetch(
@@ -33,7 +38,7 @@ export const uploadMackerelGraph = async ({
       {
         headers: {
           Cookie: createCookieString({
-            timezoneName: "Asia/Tokyo",
+            timezoneName: 'Asia/Tokyo',
             PLAY2AUTH_SESS_ID: play2AuthSessId,
           }),
         },
@@ -46,12 +51,12 @@ export const uploadMackerelGraph = async ({
     const imageBuffer = Buffer.from(await mackerelRes.arrayBuffer());
     const objectPath = `sakata-lab/mackerel/${now.toISOString()}.png`;
     await bucket.file(objectPath).save(imageBuffer, {
-      contentType: "image/png",
+      contentType: 'image/png',
       resumable: false,
     });
     return `https://img.hideo54.com/${objectPath}`;
   } catch (e) {
-    console.error("Failed to upload Mackerel graph to Cloud Storage:", e);
+    console.error('Failed to upload Mackerel graph to Cloud Storage:', e);
     return null;
   }
 };
