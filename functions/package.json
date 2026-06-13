@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@google-cloud/functions-framework": "^5.0.2",
+    "@slack/types": "^2.21.1",
     "@types/ssh2-streams": "^0.1.13",
     "oxfmt": "^0.54.0",
     "typescript": "^6.0.3"

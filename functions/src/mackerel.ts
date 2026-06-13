@@ -1,4 +1,5 @@
-import type { App, KnownBlock } from "@slack/bolt";
+import type { App } from "@slack/bolt";
+import type { KnownBlock } from "@slack/types";
 import axios, { type AxiosError } from "axios";
 import dayjs from "dayjs";
 import qs from "qs";

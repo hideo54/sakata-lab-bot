@@ -1,4 +1,5 @@
-import type { App, Block } from "@slack/bolt";
+import type { App } from "@slack/bolt";
+import type { Block } from '@slack/types';
 import { stripIndent } from "common-tags";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
