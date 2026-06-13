@@ -9,7 +9,8 @@
     "debug": "node --inspect node_modules/.bin/functions-framework --source=lib/ --target=sakataLabBot",
     "deploy": "firebase deploy --only functions",
     "format": "oxfmt",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "prepare": "cd .. && husky functions/.husky || true"
   },
   "dependencies": {
     "@google-cloud/functions-framework": "^5.0.2",
@@ -30,8 +31,13 @@
     "@types/node": "^25.9.3",
     "@types/ssh2": "^1.15.5",
     "@types/ssh2-streams": "^0.1.13",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.7",
     "oxfmt": "^0.54.0",
     "typescript": "^6.0.3"
+  },
+  "lint-staged": {
+    "*": "oxfmt --no-error-on-unmatched-pattern"
   },
   "engines": {
     "node": "24"
