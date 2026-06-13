@@ -4,8 +4,8 @@
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
-    "serve": "npm run build && firebase emulators:start --only functions",
-    "shell": "npm run build && firebase functions:shell",
+    "serve": "pnpm run build && firebase emulators:start --only functions",
+    "shell": "pnpm run build && firebase functions:shell",
     "debug": "node --inspect node_modules/.bin/functions-framework --source=lib/ --target=sakataLabBot",
     "deploy": "firebase deploy --only functions",
     "format": "oxfmt",
