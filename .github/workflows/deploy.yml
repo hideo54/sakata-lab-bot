@@ -34,10 +34,20 @@ jobs:
           cache-dependency-path: functions/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
-      - uses: google-github-actions/auth@v3
+      - name: Google Cloud OIDC for sakataLabBot
+        uses: google-github-actions/auth@v3
         with:
           project_id: hideo54
           workload_identity_provider: projects/662358710068/locations/global/workloadIdentityPools/github-pool/providers/github-provider
           service_account: gh-deploy-sakata-lab-bot@hideo54.iam.gserviceaccount.com
           token_format: 'id_token'
+          id_token_audience: 'https://asia-northeast1-hideo54.cloudfunctions.net/sakataLabBot'
+      - name: Google Cloud OIDC for sakataLabBotScheduler
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: hideo54
+          workload_identity_provider: projects/662358710068/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+          service_account: gh-deploy-sakata-lab-bot@hideo54.iam.gserviceaccount.com
+          token_format: 'id_token'
+          id_token_audience: 'https://asia-northeast1-hideo54.cloudfunctions.net/sakataLabBotScheduler'
       - run: pnpm run deploy
