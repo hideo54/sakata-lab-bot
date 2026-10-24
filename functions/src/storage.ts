@@ -1,8 +1,14 @@
-import { Storage } from '@google-cloud/storage';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import dayjs from 'dayjs';
 
-const storage = new Storage();
-const bucket = storage.bucket('img.hideo54.com');
+const r2 = new S3Client({
+    region: 'auto',
+    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+    },
+});
 
 const createCookieString = (cookieObject: object) =>
     Object.entries(cookieObject)
@@ -51,13 +57,17 @@ export const uploadMackerelGraph = async ({
         }
         const imageBuffer = Buffer.from(await mackerelRes.arrayBuffer());
         const objectPath = `sakata-lab/mackerel/${now.toISOString()}.png`;
-        await bucket.file(objectPath).save(imageBuffer, {
-            contentType: 'image/png',
-            resumable: false,
-        });
+        await r2.send(
+            new PutObjectCommand({
+                Bucket: 'img',
+                Key: objectPath,
+                Body: imageBuffer,
+                ContentType: 'image/png',
+            }),
+        );
         return `https://img.hideo54.com/${objectPath}`;
     } catch (e) {
-        console.error('Failed to upload Mackerel graph to Cloud Storage:', e);
+        console.error('Failed to upload Mackerel graph to R2:', e);
         return null;
     }
 };
