@@ -34,6 +34,10 @@ jobs:
           cache-dependency-path: functions/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
+      - name: Write .env from GitHub Secrets for firebase deploy
+        env:
+          SECRETS: ${{ toJSON(secrets) }}
+        run: echo "$SECRETS" | jq -r 'to_entries[] | select(.key != "github_token") | "\(.key)=\(.value | @json)"' > .env
       - name: Google Cloud OIDC for sakataLabBot
         uses: google-github-actions/auth@v3
         with:
