@@ -24,15 +24,11 @@ jobs:
         working-directory: functions
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/setup@v3
         with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: pnpm
-          cache-dependency-path: functions/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+          working-directory: functions
+          cache: true
+          require-lockfile: true
       - run: pnpm run build
       - name: Write .env from GitHub Secrets for firebase deploy
         env:

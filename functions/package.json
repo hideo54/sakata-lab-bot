@@ -40,6 +40,16 @@
     "lint-staged": {
         "*": "oxfmt --no-error-on-unmatched-pattern"
     },
+    "devEngines": {
+        "packageManager": {
+            "name": "pnpm",
+            "version": "^12.0.0"
+        },
+        "runtime": {
+            "name": "node",
+            "version": "24"
+        }
+    },
     "engines": {
         "node": "24"
     }
